@@ -40,6 +40,8 @@ uci set dhcp.@dnsmasq[0].expandhosts="1"
 uci set dhcp.@dnsmasq[0].cachesize="0"
 uci set dhcp.@dnsmasq[0].noresolv="1"
 uci -q del dhcp.@dnsmasq[0].server
+# Set AdGuard Home as upstream DNS for dnsmasq (so the router itself can resolve domains)
+uci add_list dhcp.@dnsmasq[0].server="127.0.0.1:53"
 
 # Delete existing config ready to install new options.
 uci -q del dhcp.lan.dhcp_option

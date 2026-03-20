@@ -13,11 +13,26 @@ CERT_DIR="/etc/adguardhome"
 
 echo "=== Gerando certificado Let's Encrypt para ${DOMAIN} ==="
 
+# Detectar package manager (apk for OpenWrt 25.12+, opkg otherwise)
+if command -v apk >/dev/null 2>&1; then
+    PKG_MGR="apk"
+elif command -v opkg >/dev/null 2>&1; then
+    PKG_MGR="opkg"
+else
+    echo "ERROR: Nem apk nem opkg encontrado"
+    exit 1
+fi
+
 # Verificar se acme.sh está instalado
 if ! command -v acme.sh >/dev/null 2>&1; then
     echo "Instalando acme.sh..."
-    opkg update
-    opkg install acme.sh
+    if [ "$PKG_MGR" = "apk" ]; then
+        apk update
+        apk add acme.sh
+    else
+        opkg update
+        opkg install acme.sh
+    fi
 fi
 
 # Criar diretório para certificados

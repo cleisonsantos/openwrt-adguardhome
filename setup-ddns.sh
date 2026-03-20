@@ -53,18 +53,23 @@ EOF
 
 echo "Configuração DDNS criada em /etc/config/ddns"
 
-# Iniciar DDNS
+# Iniciar DDNS via init.d (assíncrono, não trava o script)
 echo "Iniciando serviço DDNS..."
-. /usr/lib/ddns/dynamic_dns_functions.sh
-start_daemon_for_all_ddns_sections "wan"
+/etc/init.d/ddns enable
+/etc/init.d/ddns start
 
 echo "=== DDNS configurado com sucesso! ==="
 echo ""
-echo "Teste manual: /usr/lib/ddns/dynamic_dns_updater.sh ${DUCKDNS_DOMAIN}"
+echo "Verificar status:"
+echo "  /etc/init.d/ddns status"
+echo "  logread -e ddns"
+echo ""
+echo "Teste manual:"
+echo "  /usr/lib/ddns/dynamic_dns_updater.sh ${DUCKDNS_DOMAIN}"
 echo ""
 echo "---"
 echo "Para habilitar HTTPS (opcional):"
-echo "1. opkg install curl"
-echo "2. mkdir -p /etc/ssl/certs"
-echo "3. curl -k https://certs.secureserver.net/repository/sf_bundle-g2.crt > /etc/ssl/certs/ca-bundle.pem"
-echo "4. Edite /etc/config/ddns e descomente as linhas use_https e cacert"
+echo "  opkg install curl"
+echo "  mkdir -p /etc/ssl/certs"
+echo "  curl -k https://certs.secureserver.net/repository/sf_bundle-g2.crt > /etc/ssl/certs/ca-bundle.pem"
+echo "  Edite /etc/config/ddns e descomente as linhas use_https e cacert"
