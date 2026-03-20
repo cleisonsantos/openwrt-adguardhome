@@ -12,35 +12,46 @@ DUCKDNS_USERNAME="cleison"
 
 echo "=== Configurando DDNS para ${DUCKDNS_DOMAIN}.duckdns.org ==="
 
+# Detectar package manager (apk for OpenWrt 25.12+, opkg otherwise)
+if command -v apk >/dev/null 2>&1; then
+    PKG_MGR="apk"
+    echo "Detectado: apk"
+elif command -v opkg >/dev/null 2>&1; then
+    PKG_MGR="opkg"
+    echo "Detectado: opkg"
+else
+    echo "ERROR: Nem apk nem opkg encontrado"
+    exit 1
+fi
+
+# Instalar ddns-scripts
+echo "Instalando ddns-scripts..."
+if [ "$PKG_MGR" = "apk" ]; then
+    apk update
+    apk add ddns-scripts
+else
+    opkg update
+    opkg install ddns-scripts
+fi
+
 # Atualizar /etc/config/ddns
+# Nota: password fica VAZIO pois o token vai na URL (ddns-scripts substitui [PASSWORD])
 cat > /etc/config/ddns << EOF
 config service "${DUCKDNS_DOMAIN}"
         option enabled          "1"
         option domain           "${DUCKDNS_DOMAIN}.duckdns.org"
         option username         "${DUCKDNS_USERNAME}"
-        option password         "${DUCKDNS_TOKEN}"
+        option password         ""
         option ip_source        "network"
         option ip_network       "wan"
         option force_interval   "72"
         option force_unit       "hours"
         option check_interval   "10"
         option check_unit       "minutes"
-        option update_url       "http://www.duckdns.org/update?domains=${DUCKDNS_USERNAME}&token=${DUCKDNS_TOKEN}&ip=[IP]"
+        option update_url       "http://www.duckdns.org/update?domains=[USERNAME]&token=[PASSWORD]&ip=[IP]"
 EOF
 
 echo "Configuração DDNS criada em /etc/config/ddns"
-
-# Se quiser usar HTTPS com CA bundle, instalar curl e certificado
-echo "Instalando curl e CA bundle para HTTPS..."
-opkg update
-opkg install curl
-
-mkdir -p /etc/ssl/certs
-curl -k https://certs.secureserver.net/repository/sf_bundle-g2.crt > /etc/ssl/certs/ca-bundle.pem 2>/dev/null
-
-# Habilitar HTTPS no DDNS (opcional - remova os comentários se quiser)
-sed -i 's/#option use_https/option use_https/' /etc/config/ddns
-sed -i 's/#option cacert/option cacert/' /etc/config/ddns
 
 # Iniciar DDNS
 echo "Iniciando serviço DDNS..."
@@ -48,4 +59,12 @@ echo "Iniciando serviço DDNS..."
 start_daemon_for_all_ddns_sections "wan"
 
 echo "=== DDNS configurado com sucesso! ==="
+echo ""
 echo "Teste manual: /usr/lib/ddns/dynamic_dns_updater.sh ${DUCKDNS_DOMAIN}"
+echo ""
+echo "---"
+echo "Para habilitar HTTPS (opcional):"
+echo "1. opkg install curl"
+echo "2. mkdir -p /etc/ssl/certs"
+echo "3. curl -k https://certs.secureserver.net/repository/sf_bundle-g2.crt > /etc/ssl/certs/ca-bundle.pem"
+echo "4. Edite /etc/config/ddns e descomente as linhas use_https e cacert"
