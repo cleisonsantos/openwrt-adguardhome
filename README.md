@@ -43,7 +43,18 @@ Este script:
 - Cria regras de firewall para interceptar DNS
 - Inicia o serviço AdGuard Home
 
-### 3. Configure o DDNS (DuckDNS)
+### 3. Configure o AdGuard Home
+
+1. Acesse a interface web em `http://SEU_IP_ROTEADOR:8080`
+2. Configure o DNS (porta 53) e adicione upstream DNS
+3. Finalize a configuracao:
+
+```bash
+chmod +x finalize-install.sh
+./finalize-install.sh
+```
+
+### 4. Configure o DDNS (DuckDNS)
 
 Edite o arquivo `setup-ddns.sh` e substitua `SEU_TOKEN_DUCKDNS` pelo seu token:
 
@@ -58,7 +69,7 @@ chmod +x setup-ddns.sh
 ./setup-ddns.sh
 ```
 
-### 4. Configure o HTTPS/DoH/DoT
+### 5. Configure o HTTPS/DoH/DoT
 
 Edite o arquivo `ssl-setup.sh` e substitua `SEU_TOKEN_DUCKDNS`:
 
@@ -73,7 +84,7 @@ chmod +x ssl-setup.sh
 ./ssl-setup.sh
 ```
 
-### 5. Configure o AdGuard Home via Web Interface
+### 6. Configure o AdGuard Home via Web Interface
 
 1. Acesse a interface web em `http://SEU_IP_ROTEADOR:8080`
 2. Vá em **Settings → DNS Settings**

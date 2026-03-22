@@ -10,6 +10,33 @@ else
     exit 1
 fi
 
+if [ "$1" = "--finalize" ]; then
+    # Wait until AdGuard Home is responding on port 53
+    tries=30
+    while [ "$tries" -gt 0 ]; do
+        if nslookup -timeout=2 openwrt.org 127.0.0.1 >/dev/null 2>&1; then
+            break
+        fi
+        tries=$((tries - 1))
+        sleep 1
+    done
+
+    if [ "$tries" -eq 0 ]; then
+        echo "ERROR: AdGuard Home ainda nao responde em 127.0.0.1:53"
+        echo "Configure o AdGuard Home e tente novamente."
+        exit 1
+    fi
+
+    # Set AdGuard Home as upstream DNS for dnsmasq (so the router itself can resolve domains)
+    uci -q del dhcp.@dnsmasq[0].server
+    uci add_list dhcp.@dnsmasq[0].server="127.0.0.1:53"
+    uci commit dhcp
+    service dnsmasq restart
+
+    echo "DNS do roteador agora aponta para o AdGuard Home."
+    exit 0
+fi
+
 # Install AdGuard Home
 if [ "$PKG_MGR" = "apk" ]; then
     apk update
@@ -40,8 +67,9 @@ uci set dhcp.@dnsmasq[0].expandhosts="1"
 uci set dhcp.@dnsmasq[0].cachesize="0"
 uci set dhcp.@dnsmasq[0].noresolv="1"
 uci -q del dhcp.@dnsmasq[0].server
-# Set AdGuard Home as upstream DNS for dnsmasq (so the router itself can resolve domains)
-uci add_list dhcp.@dnsmasq[0].server="127.0.0.1:53"
+# IMPORTANT: Não configuramos o dnsmasq para usar 127.0.0.1:53 ainda
+# Isso será feito após o AdGuard Home estar configurado e respondendo na porta 53
+# Para evitar que o roteador pare de resolver DNS durante a configuração inicial
 
 # Delete existing config ready to install new options.
 uci -q del dhcp.lan.dhcp_option
@@ -84,5 +112,25 @@ service firewall restart
 # Enable and start AdGuard Home
 service adguardhome enable
 service adguardhome start
+
+echo ""
+echo "========================================"
+echo "AdGuard Home instalado com sucesso!"
+echo "========================================"
+echo ""
+echo "IMPORTANTE: O AdGuard Home precisa ser configurado antes de ativar o DNS."
+echo ""
+echo "Proximos passos:"
+echo "1. Acesse a interface web em: http://${NET_ADDR}:8080"
+echo "2. Configure o AdGuard Home (defina porta 53 para DNS)"
+echo "3. Adicione upstream DNS (ex: https://dns10.quad9.net/dns-query)"
+echo "4. Execute: ./finalize-install.sh"
+echo ""
+echo "O dnsmasq foi configurado para nao vazar consultas DNS para o ISP."
+echo "Clientes DHCP receberao ${NET_ADDR} como DNS."
+echo ""
+echo "Para verificar se o AdGuard esta respondendo:"
+echo "  nslookup google.com 127.0.0.1"
+echo ""
 
 exit 0
